@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Clock & Timers</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --panel-bg: #141414;
+            --panel-active: #2a2a2a;
+            --text-color: #ffffff;
+            --text-muted: #888888;
+            --accent-color: #ffd700; /* Gold */
+            --danger-color: #ff4757;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Sidebar Panel */
+        .sidebar {
+            width: 250px;
+            background-color: var(--panel-bg);
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 0;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+
+        .home-container {
+            padding: 0 24px 32px 24px;
+        }
+
+        .nav-btn {
+            background-color: var(--bg-color);
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(255, 255, 255, 0.05);
+            transition: transform 0.1s ease, background-color 0.1s ease;
+        }
+
+        .nav-btn:active {
+            background-color: var(--panel-active);
+            transform: scale(0.95);
+        }
+
+        .nav-btn svg {
+            width: 28px;
+            height: 28px;
+            stroke: var(--accent-color);
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .tabs {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 0 16px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            padding: 16px;
+            text-align: left;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .tab-btn:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+        }
+
+        .tab-btn.active {
+            background-color: rgba(255, 215, 0, 0.1);
+            color: var(--accent-color);
+        }
+
+        /* Main Content Area */
+        .content {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 48px;
+            box-sizing: border-box;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        h2 {
+            font-weight: 300;
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+            position: absolute;
+            top: 24px;
+            left: 48px;
+        }
+
+        /* Shared UI Elements */
+        .display-text {
+            font-size: 6rem;
+            font-weight: 200;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 10px;
+            letter-spacing: -2px;
+        }
+        
+        .display-sub {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+        }
+
+        .btn {
+            background-color: var(--panel-bg);
+            color: var(--text-color);
+            border: 1px solid #333;
+            padding: 16px 32px;
+            border-radius: 24px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .btn:active {
+            background-color: var(--panel-active);
+        }
+
+        .btn-primary {
+            background-color: rgba(255, 215, 0, 0.15);
+            color: var(--accent-color);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .btn-danger {
+            background-color: rgba(255, 71, 87, 0.15);
+            color: var(--danger-color);
+            border-color: rgba(255, 71, 87, 0.3);
+        }
+
+        /* Specific Views */
+        #alarms .alarm-list {
+            width: 100%;
+            max-width: 400px;
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        .alarm-item {
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alarm-time {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 8px;
+        }
+
+        input[type="time"] {
+            background: var(--panel-bg);
+            color: white;
+            border: 1px solid #333;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color-scheme: dark;
+        }
+
+        .timer-inputs {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .timer-inputs input {
+            width: 80px;
+            background: var(--panel-bg);
+            color: white;
+            border: 1px solid #333;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 2rem;
+            text-align: center;
+        }
+
+        #laps {
+            margin-top: 30px;
+            width: 100%;
+            max-width: 300px;
+            list-style: none;
+            padding: 0;
+            max-height: 30vh;
+            overflow-y: auto;
+            color: var(--text-muted);
+        }
+        
+        #laps li {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        /* Notification Modal */
+        #notification {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: var(--accent-color);
+            color: black;
+            padding: 20px 30px;
+            border-radius: 16px;
+            font-weight: 600;
+            transform: translateX(150%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        #notification.show {
+            transform: translateX(0);
+        }
+
+        #notification button {
+            background: black;
+            color: var(--accent-color);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <!-- Updated home container with logo -->
+        <div class="home-container" style="display: flex; align-items: center; gap: 16px; padding: 0 24px 32px 24px;">
+            <a href="index.html" class="nav-btn" aria-label="Home">
+                <svg viewBox="0 0 24 24">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+            </a>
+            <img src="https://resources.jakerowe.me/logos/rowe/logo-white.png" alt="Rowe Logo" style="height: 32px; width: auto; object-fit: contain;">
+        </div>
+        
+        <nav class="tabs">
+            <button class="tab-btn active" data-target="world-clock">World Clock</button>
+            <button class="tab-btn" data-target="alarms">Alarms</button>
+            <button class="tab-btn" data-target="stopwatch">Stopwatch</button>
+            <button class="tab-btn" data-target="timer">Timer</button>
+        </nav>
+    </aside>
+
+    <main class="content">
+        <!-- WORLD CLOCK -->
+        <div id="world-clock" class="view active">
+            <h2>World Clock</h2>
+            <div id="wc-time" class="display-text">00:00:00</div>
+            <div id="wc-date" class="display-sub">Loading date...</div>
+        </div>
+
+        <!-- ALARMS -->
+        <div id="alarms" class="view">
+            <h2>Alarms</h2>
+            <ul class="alarm-list" id="alarm-list">
+                <!-- Alarms populated here -->
+            </ul>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <input type="time" id="alarm-input" style="margin: 0;">
+                <button class="btn btn-primary" onclick="addAlarm()">Add Alarm</button>
+            </div>
+        </div>
+
+        <!-- STOPWATCH -->
+        <div id="stopwatch" class="view">
+            <h2>Stopwatch</h2>
+            <div id="sw-display" class="display-text">00:00.00</div>
+            <div class="controls">
+                <button id="sw-start" class="btn btn-primary" onclick="toggleStopwatch()">Start</button>
+                <button class="btn" onclick="lapStopwatch()">Lap</button>
+                <button class="btn btn-danger" onclick="resetStopwatch()">Reset</button>
+            </div>
+            <ul id="laps"></ul>
+        </div>
+
+        <!-- TIMER -->
+        <div id="timer" class="view">
+            <h2>Timer</h2>
+            <div id="tmr-display" class="display-text" style="display: none;">00:00:00</div>
+            
+            <div class="timer-inputs" id="tmr-inputs">
+                <input type="number" id="tmr-h" placeholder="00" min="0" max="99">
+                <input type="number" id="tmr-m" placeholder="00" min="0" max="59">
+                <input type="number" id="tmr-s" placeholder="00" min="0" max="59">
+            </div>
+
+            <div class="controls">
+                <button id="tmr-start" class="btn btn-primary" onclick="toggleTimer()">Start</button>
+                <button class="btn btn-danger" onclick="resetTimer()">Cancel</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Custom Alert Notification -->
+    <div id="notification">
+        <span id="notif-text">Ring Ring!</span>
+        <button onclick="dismissNotification()">Dismiss</button>
+    </div>
+
+    <script>
+        /* --- TAB LOGIC --- */
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const views = document.querySelectorAll('.view');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                views.forEach(v => v.classList.remove('active'));
+                
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.target).classList.add('active');
+            });
+        });
+
+        /* --- NOTIFICATION SYSTEM --- */
+        const notifElement = document.getElementById('notification');
+        const notifText = document.getElementById('notif-text');
+        let audioContext;
+
+        function playBeep() {
+            if(!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 800;
+            gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 1);
+        }
+
+        function showNotification(msg) {
+            notifText.innerText = msg;
+            notifElement.classList.add('show');
+            playBeep();
+        }
+
+        function dismissNotification() {
+            notifElement.classList.remove('show');
+        }
+
+        /* --- WORLD CLOCK --- */
+        function updateWorldClock() {
+            const now = new Date();
+            document.getElementById('wc-time').innerText = now.toLocaleTimeString('en-US', { hour12: false });
+            document.getElementById('wc-date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        }
+        setInterval(updateWorldClock, 1000);
+        updateWorldClock();
+
+        /* --- ALARMS --- */
+        let alarms = [];
+        const alarmListEl = document.getElementById('alarm-list');
+        const alarmInput = document.getElementById('alarm-input');
+
+        function renderAlarms() {
+            alarmListEl.innerHTML = '';
+            alarms.forEach((a, index) => {
+                const li = document.createElement('li');
+                li.className = 'alarm-item';
+                li.innerHTML = `
+                    <span class="alarm-time">${a}</span>
+                    <button class="delete-btn" onclick="deleteAlarm(${index})">Delete</button>
+                `;
+                alarmListEl.appendChild(li);
+            });
+        }
+
+        function addAlarm() {
+            const val = alarmInput.value;
+            if (val && !alarms.includes(val)) {
+                alarms.push(val);
+                alarms.sort();
+                renderAlarms();
+                alarmInput.value = '';
+            }
+        }
+
+        function deleteAlarm(index) {
+            alarms.splice(index, 1);
+            renderAlarms();
+        }
+
+        // Check Alarms every second
+        setInterval(() => {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = now.getSeconds();
+            const currentTimeStr = `${h}:${m}`;
+
+            if (s === 0 && alarms.includes(currentTimeStr)) {
+                showNotification(`Alarm for ${currentTimeStr}!`);
+            }
+        }, 1000);
+
+        /* --- STOPWATCH --- */
+        let swStartTime, swInterval, swElapsedTime = 0, swRunning = false;
+        const swDisplay = document.getElementById('sw-display');
+        const swStartBtn = document.getElementById('sw-start');
+        const lapsList = document.getElementById('laps');
+        let lapCount = 1;
+
+        function formatStopwatch(ms) {
+            const min = String(Math.floor(ms / 60000)).padStart(2, '0');
+            const sec = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0');
+            const centi = String(Math.floor((ms % 1000) / 10)).padStart(2, '0');
+            return `${min}:${sec}.${centi}`;
+        }
+
+        function updateStopwatch() {
+            const now = Date.now();
+            const diff = swElapsedTime + (now - swStartTime);
+            swDisplay.innerText = formatStopwatch(diff);
+        }
+
+        function toggleStopwatch() {
+            if (swRunning) {
+                swElapsedTime += Date.now() - swStartTime;
+                clearInterval(swInterval);
+                swStartBtn.innerText = 'Start';
+                swStartBtn.classList.remove('btn-danger');
+                swStartBtn.classList.add('btn-primary');
+            } else {
+                swStartTime = Date.now();
+                swInterval = setInterval(updateStopwatch, 10);
+                swStartBtn.innerText = 'Stop';
+                swStartBtn.classList.remove('btn-primary');
+                swStartBtn.classList.add('btn-danger');
+            }
+            swRunning = !swRunning;
+        }
+
+        function lapStopwatch() {
+            if (!swRunning) return;
+            const currentTotal = swElapsedTime + (Date.now() - swStartTime);
+            const li = document.createElement('li');
+            li.innerHTML = `<span>Lap ${lapCount++}</span> <span>${formatStopwatch(currentTotal)}</span>`;
+            lapsList.prepend(li);
+        }
+
+        function resetStopwatch() {
+            clearInterval(swInterval);
+            swRunning = false;
+            swElapsedTime = 0;
+            swDisplay.innerText = "00:00.00";
+            swStartBtn.innerText = 'Start';
+            swStartBtn.classList.remove('btn-danger');
+            swStartBtn.classList.add('btn-primary');
+            lapsList.innerHTML = '';
+            lapCount = 1;
+        }
+
+        /* --- TIMER --- */
+        let tmrInterval, tmrRemaining = 0, tmrRunning = false;
+        const tmrH = document.getElementById('tmr-h');
+        const tmrM = document.getElementById('tmr-m');
+        const tmrS = document.getElementById('tmr-s');
+        const tmrDisplay = document.getElementById('tmr-display');
+        const tmrInputs = document.getElementById('tmr-inputs');
+        const tmrStartBtn = document.getElementById('tmr-start');
+
+        function formatTimer(totalSecs) {
+            const h = String(Math.floor(totalSecs / 3600)).padStart(2, '0');
+            const m = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
+            const s = String(totalSecs % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function tickTimer() {
+            if (tmrRemaining <= 0) {
+                resetTimer();
+                showNotification("Timer Finished!");
+                return;
+            }
+            tmrRemaining--;
+            tmrDisplay.innerText = formatTimer(tmrRemaining);
+        }
+
+        function toggleTimer() {
+            if (tmrRunning) {
+                // Pause
+                clearInterval(tmrInterval);
+                tmrStartBtn.innerText = 'Resume';
+            } else {
+                // Start / Resume
+                if (tmrRemaining === 0) {
+                    const h = parseInt(tmrH.value || 0);
+                    const m = parseInt(tmrM.value || 0);
+                    const s = parseInt(tmrS.value || 0);
+                    tmrRemaining = (h * 3600) + (m * 60) + s;
+                }
+                
+                if(tmrRemaining <= 0) return; // Prevent starting 0 timer
+
+                tmrInputs.style.display = 'none';
+                tmrDisplay.style.display = 'block';
+                tmrDisplay.innerText = formatTimer(tmrRemaining);
+                
+                tmrInterval = setInterval(tickTimer, 1000);
+                tmrStartBtn.innerText = 'Pause';
+            }
+            tmrRunning = !tmrRunning;
+        }
+
+        function resetTimer() {
+            clearInterval(tmrInterval);
+            tmrRunning = false;
+            tmrRemaining = 0;
+            tmrInputs.style.display = 'flex';
+            tmrDisplay.style.display = 'none';
+            tmrStartBtn.innerText = 'Start';
+            tmrH.value = '';
+            tmrM.value = '';
+            tmrS.value = '';
+        }
+    </script>
+</body>
+</html>

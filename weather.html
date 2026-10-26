@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Weather</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --panel-bg: rgba(20, 20, 20, 0.65);
+            --text-color: #ffffff;
+            --text-muted: #aaaaaa;
+            --accent-color: #ffd700;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Dynamic Background Layer */
+        #bg-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-size: cover;
+            background-position: center;
+            transition: background 1s ease;
+        }
+
+        /* Weather Photo Classes with dark gradients */
+        .weather-clear { background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1506744031576-c6229147d0b7?q=80&w=1200&auto=format&fit=crop'); }
+        .weather-cloudy { background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1534088568595-a066f410cbda?q=80&w=1200&auto=format&fit=crop'); }
+        .weather-rain { background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.9)), url('https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?q=80&w=1200&auto=format&fit=crop'); }
+        .weather-snow { background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1542601098-8fc114e148e2?q=80&w=1200&auto=format&fit=crop'); }
+        .weather-thunder { background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.9)), url('https://images.unsplash.com/photo-1605727216801-e27ce1d0ce49?q=80&w=1200&auto=format&fit=crop'); }
+        .weather-fog { background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1487621167305-5d248087c724?q=80&w=1200&auto=format&fit=crop'); }
+
+        /* Full-width header layout matching the other pages */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px;
+            box-sizing: border-box;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            height: 32px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .nav-btn {
+            background-color: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s ease, background-color 0.1s ease;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .nav-btn:active {
+            background-color: rgba(42, 42, 42, 0.8);
+            transform: scale(0.95);
+        }
+
+        .nav-btn svg {
+            width: 28px;
+            height: 28px;
+            stroke: var(--accent-color);
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Center container for the weather data */
+        .container {
+            padding: 0 24px 24px 24px;
+            box-sizing: border-box;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Main Current Weather */
+        .current-weather {
+            text-align: center;
+            margin-bottom: 48px;
+            margin-top: 24px;
+        }
+
+        .temp-large {
+            font-size: 6rem;
+            font-weight: 200;
+            line-height: 1;
+            margin-bottom: 8px;
+            letter-spacing: -2px;
+        }
+
+        .condition-text {
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: var(--accent-color);
+            margin-bottom: 8px;
+        }
+
+        .high-low {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background-color: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0 0 16px 0;
+            font-weight: 500;
+        }
+
+        /* Hourly Forecast Scroll */
+        .hourly-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 24px;
+            padding-bottom: 8px;
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        .hourly-scroll::-webkit-scrollbar {
+            display: none; /* Safari/Chrome */
+        }
+
+        .hourly-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 60px;
+        }
+
+        .hourly-time {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .hourly-temp {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        /* Daily Forecast List */
+        .daily-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .daily-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 12px;
+        }
+
+        .daily-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .daily-day {
+            flex: 1;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .daily-desc {
+            flex: 1;
+            font-size: 1rem;
+            color: var(--accent-color);
+            text-align: center;
+        }
+
+        .daily-temps {
+            flex: 1;
+            text-align: right;
+            font-size: 1.1rem;
+        }
+
+        .daily-temps .min {
+            color: var(--text-muted);
+            margin-left: 8px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="bg-layer" class="weather-clear"></div>
+
+    <!-- Header moved outside the constrained container -->
+    <header>
+        <div class="header-left">
+            <a href="index.html" class="nav-btn" aria-label="Home">
+                <svg viewBox="0 0 24 24">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+            </a>
+            <img src="https://resources.jakerowe.me/logos/rowe/logo-white.png" alt="Rowe Logo" class="logo">
+        </div>
+    </header>
+
+    <div class="container">
+        <main>
+            <!-- Current Weather Overview -->
+            <div class="current-weather">
+                <div class="temp-large" id="current-temp">--°</div>
+                <div class="condition-text" id="current-desc">Locating...</div>
+                <div class="high-low" id="current-high-low">H: --° L: --°</div>
+            </div>
+
+            <!-- Hourly Forecast -->
+            <div class="glass-panel">
+                <h3 class="panel-title">Hourly Forecast</h3>
+                <div class="hourly-scroll" id="hourly-container">
+                    <!-- Javascript will inject hourly items here -->
+                </div>
+            </div>
+
+            <!-- 7-Day Forecast -->
+            <div class="glass-panel">
+                <h3 class="panel-title">7-Day Forecast</h3>
+                <div class="daily-list" id="daily-container">
+                    <!-- Javascript will inject daily items here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const bgLayer = document.getElementById("bg-layer");
+            const currentTemp = document.getElementById("current-temp");
+            const currentDesc = document.getElementById("current-desc");
+            const currentHighLow = document.getElementById("current-high-low");
+            const hourlyContainer = document.getElementById("hourly-container");
+            const dailyContainer = document.getElementById("daily-container");
+
+            // Utility to convert WMO weather codes to text
+            function getWeatherStatus(code) {
+                if (code === 0) return { text: "Clear Sky", class: "weather-clear" };
+                if (code >= 1 && code <= 3) return { text: "Cloudy", class: "weather-cloudy" };
+                if (code === 45 || code === 48) return { text: "Fog", class: "weather-fog" };
+                if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return { text: "Rain", class: "weather-rain" };
+                if ((code >= 71 && code <= 77) || code === 85 || code === 86) return { text: "Snow", class: "weather-snow" };
+                if (code >= 95) return { text: "Thunderstorms", class: "weather-thunder" };
+                return { text: "Clear", class: "weather-clear" }; // Default
+            }
+
+            // Format hour (e.g., "3 PM")
+            function formatHour(isoString) {
+                const date = new Date(isoString);
+                return date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+            }
+
+            // Format day (e.g., "Monday")
+            function formatDay(isoString, index) {
+                if (index === 0) return "Today";
+                const date = new Date(isoString + "T12:00:00"); 
+                return date.toLocaleDateString('en-US', { weekday: 'long' });
+            }
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const { latitude, longitude } = position.coords;
+                        try {
+                            const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m&daily=weathercode,temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto`;
+                            const response = await fetch(url);
+                            
+                            if (!response.ok) throw new Error("API failed");
+                            const data = await response.json();
+
+                            // 1. Current Weather
+                            const cw = data.current_weather;
+                            const status = getWeatherStatus(cw.weathercode);
+                            
+                            currentTemp.textContent = `${Math.round(cw.temperature)}°`;
+                            currentDesc.textContent = status.text;
+                            
+                            // Update Background
+                            bgLayer.className = status.class;
+
+                            // Update High/Low for today
+                            const todayMax = Math.round(data.daily.temperature_2m_max[0]);
+                            const todayMin = Math.round(data.daily.temperature_2m_min[0]);
+                            currentHighLow.textContent = `H: ${todayMax}°  L: ${todayMin}°`;
+
+                            // 2. Hourly Forecast (Next 24 hours)
+                            const currentHourStr = cw.time;
+                            let startIndex = data.hourly.time.findIndex(t => t === currentHourStr);
+                            if (startIndex === -1) startIndex = 0;
+
+                            hourlyContainer.innerHTML = "";
+                            for (let i = startIndex; i < startIndex + 24; i += 2) { 
+                                if(!data.hourly.time[i]) break;
+                                
+                                const timeLabel = i === startIndex ? "Now" : formatHour(data.hourly.time[i]);
+                                const temp = Math.round(data.hourly.temperature_2m[i]);
+
+                                const div = document.createElement("div");
+                                div.className = "hourly-item";
+                                div.innerHTML = `
+                                    <span class="hourly-time">${timeLabel}</span>
+                                    <span class="hourly-temp">${temp}°</span>
+                                `;
+                                hourlyContainer.appendChild(div);
+                            }
+
+                            // 3. Daily Forecast (Next 7 days)
+                            dailyContainer.innerHTML = "";
+                            for (let i = 0; i < 7; i++) {
+                                const dayLabel = formatDay(data.daily.time[i], i);
+                                const dayCode = data.daily.weathercode[i];
+                                const dayDesc = getWeatherStatus(dayCode).text;
+                                const tMax = Math.round(data.daily.temperature_2m_max[i]);
+                                const tMin = Math.round(data.daily.temperature_2m_min[i]);
+
+                                const div = document.createElement("div");
+                                div.className = "daily-item";
+                                div.innerHTML = `
+                                    <span class="daily-day">${dayLabel}</span>
+                                    <span class="daily-desc">${dayDesc}</span>
+                                    <span class="daily-temps">
+                                        <span class="max">${tMax}°</span>
+                                        <span class="min">${tMin}°</span>
+                                    </span>
+                                `;
+                                dailyContainer.appendChild(div);
+                            }
+
+                        } catch (error) {
+                            console.error(error);
+                            currentDesc.textContent = "Unable to load weather.";
+                            currentTemp.textContent = "--°";
+                        }
+                    },
+                    (error) => {
+                        console.warn("Location access denied.");
+                        currentDesc.textContent = "Location Denied";
+                        currentTemp.textContent = "--°";
+                    }
+                );
+            } else {
+                currentDesc.textContent = "Geolocation not supported.";
+            }
+        });
+    </script>
+</body>
+</html>
