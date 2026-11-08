@@ -4,6 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Live Sports</title>
+    <script>
+        (function() {
+            const savedScale = localStorage.getItem('system_display_scale');
+            if (savedScale) {
+                const factor = parseFloat(savedScale) / 100;
+                try {
+                    const { webFrame } = require('electron');
+                    webFrame.setZoomFactor(factor);
+                } catch(e) {
+                    document.documentElement.style.zoom = factor;
+                }
+            }
+        })();
+    </script>
     <style>
         :root {
             --bg-color: #000000;
@@ -30,19 +44,25 @@
 
         /* Sidebar */
         .sidebar {
-            width: 250px;
+            width: 260px;
             background-color: var(--panel-bg);
             border-right: 1px solid #333;
             display: flex;
             flex-direction: column;
-            padding: 24px 0;
+            padding: 24px 0 16px 0;
             box-sizing: border-box;
             flex-shrink: 0;
             z-index: 10;
+            justify-content: space-between;
+        }
+
+        .sidebar-top {
+            display: flex;
+            flex-direction: column;
         }
 
         .home-container {
-            padding: 0 24px 32px 24px;
+            padding: 0 24px 28px 24px;
             display: flex;
             align-items: center;
             gap: 16px;
@@ -51,15 +71,21 @@
         .nav-btn {
             background-color: var(--bg-color);
             border-radius: 50%;
-            width: 56px;
-            height: 56px;
+            width: 54px;
+            height: 54px;
             display: flex;
             align-items: center;
             justify-content: center;
             text-decoration: none;
             box-shadow: 0 4px 6px rgba(255, 255, 255, 0.05);
-            transition: transform 0.1s ease, background-color 0.1s ease;
+            transition: transform 0.15s ease, background-color 0.15s ease;
             cursor: pointer;
+            border: 1px solid #333;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--accent-color);
+            transform: scale(1.05);
         }
 
         .nav-btn:active {
@@ -68,8 +94,8 @@
         }
 
         .nav-btn svg {
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             stroke: var(--accent-color);
             fill: none;
             stroke-width: 2;
@@ -80,7 +106,7 @@
         .tabs {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             padding: 0 16px;
         }
 
@@ -88,8 +114,8 @@
             background: none;
             border: none;
             color: var(--text-muted);
-            font-size: 1.25rem;
-            padding: 16px;
+            font-size: 1.15rem;
+            padding: 14px 16px;
             text-align: left;
             border-radius: 12px;
             cursor: pointer;
@@ -100,11 +126,16 @@
             gap: 12px;
         }
 
+        .tab-btn:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+        }
+
         .tab-logo {
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             object-fit: contain;
-            opacity: 0.6;
+            opacity: 0.7;
             transition: opacity 0.2s ease;
         }
 
@@ -114,12 +145,39 @@
         }
 
         .tab-btn.active {
-            background-color: rgba(255, 215, 0, 0.1);
+            background-color: rgba(255, 215, 0, 0.12);
             color: var(--accent-color);
+            font-weight: 700;
         }
 
         .tab-btn.active .tab-logo {
             opacity: 1;
+        }
+
+        /* ESPN Attribution in Sidebar Footer */
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #222;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .espn-attribution {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #777;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .espn-logo {
+            height: 16px;
+            width: auto;
+            object-fit: contain;
+            opacity: 0.75;
         }
 
         /* Main Content List */
@@ -135,11 +193,11 @@
             left: 0;
             width: 100%;
             height: 100%;
-            padding: 48px;
+            padding: 40px 48px;
             box-sizing: border-box;
             display: none;
             flex-direction: column;
-            gap: 24px;
+            gap: 20px;
             overflow-y: auto;
         }
 
@@ -147,50 +205,105 @@
             display: flex;
         }
 
+        .view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         h2 {
             font-weight: 300;
-            margin-top: 0;
-            margin-bottom: 8px;
+            margin: 0;
             letter-spacing: 2px;
+            font-size: 1.8rem;
+        }
+
+        .live-count-badge {
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid rgba(255, 71, 87, 0.4);
+            color: var(--danger-color);
+            padding: 4px 12px;
+            border-radius: 14px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger-color);
+            animation: pulse 1.5s infinite;
         }
 
         .games-list {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3-wide grid layout */
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
             padding-bottom: 48px;
+        }
+
+        @media (max-width: 1200px) {
+            .games-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         .game-card {
             background-color: var(--panel-bg);
             border: 1px solid #333;
-            border-radius: 20px;
+            border-radius: 18px;
             padding: 20px;
             cursor: pointer;
-            transition: transform 0.1s ease, border-color 0.2s ease, background-color 0.1s ease;
+            transition: transform 0.15s ease, border-color 0.2s ease, background-color 0.15s ease, box-shadow 0.2s ease;
             display: flex;
             flex-direction: column;
             gap: 16px;
             justify-content: space-between;
         }
 
+        .game-card:hover {
+            border-color: rgba(255, 215, 0, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+
         .game-card:active {
-            transform: scale(0.95);
+            transform: scale(0.97);
             background-color: var(--panel-active);
-            border-color: var(--text-muted);
         }
 
         .card-header {
             display: flex;
             justify-content: space-between;
-            font-size: 1.05rem;
+            align-items: center;
+            font-size: 0.95rem;
             color: var(--text-muted);
             font-weight: 600;
         }
 
-        .status.live { color: var(--danger-color); animation: pulse 2s infinite; }
-        .status.post { color: var(--text-muted); }
-        .status.pre { color: var(--success-color); }
+        .status.live, .status.in { 
+            color: var(--danger-color); 
+            font-weight: 800; 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+        }
+        .status.post { color: var(--text-muted); font-weight: 700; }
+        .status.pre { color: var(--success-color); font-weight: 700; }
+
+        .broadcast-tag {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #ccc;
+        }
 
         .card-teams {
             display: flex;
@@ -208,23 +321,29 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            overflow: hidden;
         }
 
         .card-logo {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             object-fit: contain;
+            flex-shrink: 0;
         }
 
         .card-name {
-            font-size: 1.35rem;
+            font-size: 1.25rem;
             font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .card-score {
-            font-size: 1.75rem;
-            font-weight: 600;
+            font-size: 1.7rem;
+            font-weight: 700;
             font-variant-numeric: tabular-nums;
+            margin-left: 12px;
         }
 
         /* Fullscreen Game View */
@@ -255,30 +374,38 @@
         .fs-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.45);
             z-index: -1;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
 
         .fs-header {
-            padding: 32px;
+            padding: 32px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .back-btn {
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.25);
             color: white;
             padding: 12px 24px;
             border-radius: 24px;
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            border-color: var(--accent-color);
+            background: rgba(0,0,0,0.85);
+            transform: scale(1.04);
         }
 
         .fs-main {
@@ -295,7 +422,7 @@
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 4px;
-            text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            text-shadow: 0 4px 12px rgba(0,0,0,0.6);
         }
 
         .fs-scoreboard {
@@ -305,6 +432,7 @@
             gap: 60px;
             width: 100%;
             padding: 0 40px;
+            box-sizing: border-box;
         }
 
         .fs-team {
@@ -316,21 +444,22 @@
         }
 
         .fs-logo {
-            width: 200px;
-            height: 200px;
+            width: 180px;
+            height: 180px;
             object-fit: contain;
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.6));
         }
 
         .fs-name {
-            font-size: 3.5rem;
+            font-size: 3.2rem;
             font-weight: bold;
-            text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            text-shadow: 0 4px 12px rgba(0,0,0,0.6);
+            text-align: center;
         }
 
         .fs-record {
-            font-size: 1.5rem;
-            opacity: 0.8;
+            font-size: 1.4rem;
+            opacity: 0.85;
         }
 
         .fs-score-container {
@@ -340,22 +469,22 @@
         }
 
         .fs-score {
-            font-size: 13rem;
+            font-size: 11rem;
             font-weight: 200;
             font-variant-numeric: tabular-nums;
             line-height: 1;
-            text-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            text-shadow: 0 8px 24px rgba(0,0,0,0.6);
         }
 
         .fs-divider {
             font-size: 4rem;
-            opacity: 0.3;
+            opacity: 0.35;
         }
 
         .fs-stats-bar {
-            background: rgba(0,0,0,0.6);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            padding: 32px;
+            background: rgba(0,0,0,0.65);
+            border-top: 1px solid rgba(255,255,255,0.12);
+            padding: 24px 40px;
             display: flex;
             justify-content: space-around;
             align-items: center;
@@ -365,31 +494,109 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .fs-stat-label {
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 2px;
-            font-size: 1.1rem;
+            font-size: 0.95rem;
         }
 
         .fs-stat-val {
-            font-size: 1.65rem;
+            font-size: 1.45rem;
             font-weight: 600;
+        }
+
+        /* NEW BUTTON STYLES */
+        .watch-now-btn {
+            background: var(--success-color);
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 1.15rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .watch-now-btn:hover {
+            background: #26b963;
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(46, 213, 115, 0.4);
+        }
+
+        .watch-now-btn:active {
+            transform: scale(0.95);
+        }
+
+        .watch-now-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .all-stats-btn {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 12px 26px;
+            border-radius: 24px;
+            font-size: 1.15rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+
+        .all-stats-btn:hover {
+            background: #ffe033;
+            transform: scale(1.05);
+        }
+
+        .all-stats-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Toast Notification Styles */
+        .toast-msg {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(46, 213, 115, 0.95);
+            color: #000;
+            padding: 14px 28px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            z-index: 3000;
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
+        .toast-msg.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
         }
 
         /* Stats Modal Styles */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.75);
             z-index: 2000;
             display: none;
             justify-content: center;
             align-items: center;
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
 
         .modal-overlay.active {
@@ -399,13 +606,13 @@
         .modal-content {
             background: var(--panel-bg);
             width: 90%;
-            max-width: 600px;
+            max-width: 620px;
             max-height: 80vh;
-            border-radius: 16px;
+            border-radius: 20px;
             border: 1px solid #333;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 24px 60px rgba(0,0,0,0.8);
         }
 
         .modal-header {
@@ -418,7 +625,8 @@
 
         .modal-header h3 {
             margin: 0;
-            font-size: 1.75rem;
+            font-size: 1.6rem;
+            color: var(--accent-color);
         }
 
         .close-modal-btn {
@@ -429,10 +637,7 @@
             cursor: pointer;
             line-height: 1;
         }
-
-        .close-modal-btn:hover {
-            color: white;
-        }
+        .close-modal-btn:hover { color: white; }
 
         .modal-body {
             padding: 24px;
@@ -449,89 +654,118 @@
 
         .stat-team-val {
             font-weight: bold;
-            font-size: 1.35rem;
+            font-size: 1.3rem;
             width: 80px;
             text-align: center;
         }
 
         .stat-label-text {
             color: var(--text-muted);
-            font-size: 1.05rem;
+            font-size: 1rem;
             text-transform: uppercase;
             letter-spacing: 1px;
             flex: 1;
             text-align: center;
         }
 
-        .all-stats-btn {
-            background: var(--accent-color);
-            color: #000;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 24px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.1s ease;
-        }
-
-        .all-stats-btn:active {
-            transform: scale(0.95);
-        }
-
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.4; }
-            100% { opacity: 1; }
+            0% { opacity: 1; transform: scale(0.95); }
+            50% { opacity: 0.4; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(0.95); }
         }
     </style>
 </head>
 <body>
 
     <aside class="sidebar">
-        <div class="home-container">
-            <a href="index.html" class="nav-btn" aria-label="Home">
-                <svg viewBox="0 0 24 24">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                </svg>
-            </a>
-            <img src="https://resources.jakerowe.me/logos/rowe/logo-white.png" alt="Rowe Logo" style="height: 32px; width: auto; object-fit: contain;">
+        <div class="sidebar-top">
+            <div class="home-container">
+                <a href="index.html" class="nav-btn" aria-label="Home">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                </a>
+                <img src="https://resources.jakerowe.me/logos/rowe/logo-white.png" alt="Rowe Logo" style="height: 32px; width: auto; object-fit: contain;">
+            </div>
+            
+            <nav class="tabs">
+                <button class="tab-btn active" data-target="all-games" onclick="switchTab('all', 'all-games')">
+                    Today
+                </button>
+                <button class="tab-btn" data-target="football" onclick="switchTab('nfl', 'football')">
+                    <img src="https://upload.wikimedia.org/wikipedia/en/a/a2/National_Football_League_logo.svg" class="tab-logo" alt="NFL"> NFL
+                </button>
+                <button class="tab-btn" data-target="basketball" onclick="switchTab('nba', 'basketball')">
+                    <img src="https://upload.wikimedia.org/wikipedia/en/0/03/National_Basketball_Association_logo.svg" class="tab-logo" alt="NBA"> NBA
+                </button>
+                <button class="tab-btn" data-target="baseball" onclick="switchTab('mlb', 'baseball')">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Major_League_Baseball_logo.svg" class="tab-logo" alt="MLB"> MLB
+                </button>
+                <button class="tab-btn" data-target="hockey" onclick="switchTab('nhl', 'hockey')">
+                    <img src="https://upload.wikimedia.org/wikipedia/en/3/3a/05_NHL_Shield.svg" class="tab-logo" alt="NHL"> NHL
+                </button>
+                <button class="tab-btn" data-target="college-football" onclick="switchTab('college-football', 'college-football')">
+                    <img src="https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-football-college.png" class="tab-logo" alt="NCAAF"> NCAAF
+                </button>
+            </nav>
         </div>
-        
-        <nav class="tabs">
-            <button class="tab-btn active" data-target="all-games" onclick="switchTab('all', 'all-games')">
-                Today
-            </button>
-            <button class="tab-btn" data-target="football" onclick="switchTab('nfl', 'football')">
-                <img src="https://upload.wikimedia.org/wikipedia/en/a/a2/National_Football_League_logo.svg" class="tab-logo" alt="NFL"> NFL
-            </button>
-            <button class="tab-btn" data-target="basketball" onclick="switchTab('nba', 'basketball')">
-                <img src="https://upload.wikimedia.org/wikipedia/en/0/03/National_Basketball_Association_logo.svg" class="tab-logo" alt="NBA"> NBA
-            </button>
-            <button class="tab-btn" data-target="baseball" onclick="switchTab('mlb', 'baseball')">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Major_League_Baseball_logo.svg" class="tab-logo" alt="MLB"> MLB
-            </button>
-        </nav>
+
+        <!-- Powered by ESPN Attribution -->
+        <div class="sidebar-footer">
+            <div class="espn-attribution">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/ESPN_wordmark.svg" class="espn-logo" alt="ESPN">
+                <span>Powered by ESPN</span>
+            </div>
+        </div>
     </aside>
 
     <main class="content">
-        <!-- All Games View Container -->
+        <!-- Views for each league -->
         <div id="all-games" class="view active">
-            <h2>All Matchups</h2>
-            <div class="games-list" id="all-list"><div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">Loading...</div></div>
+            <div class="view-header">
+                <h2>All Today's Matchups</h2>
+                <div class="live-count-badge" id="live-badge-all" style="display: none;">
+                    <span class="live-dot"></span>
+                    <span id="live-count-num">0</span> Live
+                </div>
+            </div>
+            <div class="games-list" id="all-list"><div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">Loading games...</div></div>
         </div>
+
         <div id="football" class="view">
-            <h2>NFL Matchups</h2>
-            <div class="games-list" id="nfl-list"><div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">Loading...</div></div>
+            <div class="view-header">
+                <h2>NFL Matchups</h2>
+            </div>
+            <div class="games-list" id="nfl-list"><div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">Loading games...</div></div>
         </div>
+
         <div id="basketball" class="view">
-            <h2>NBA Matchups</h2>
-            <div class="games-list" id="nba-list"><div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem; ">Loading...</div></div>
+            <div class="view-header">
+                <h2>NBA Matchups</h2>
+            </div>
+            <div class="games-list" id="nba-list"><div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">Loading games...</div></div>
         </div>
+
         <div id="baseball" class="view">
-            <h2>MLB Matchups</h2>
-            <div class="games-list" id="mlb-list"><div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">Loading...</div></div>
+            <div class="view-header">
+                <h2>MLB Matchups</h2>
+            </div>
+            <div class="games-list" id="mlb-list"><div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">Loading games...</div></div>
+        </div>
+
+        <div id="hockey" class="view">
+            <div class="view-header">
+                <h2>NHL Matchups</h2>
+            </div>
+            <div class="games-list" id="nhl-list"><div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">Loading games...</div></div>
+        </div>
+
+        <div id="college-football" class="view">
+            <div class="view-header">
+                <h2>College Football Matchups</h2>
+            </div>
+            <div class="games-list" id="college-football-list"><div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">Loading games...</div></div>
         </div>
     </main>
 
@@ -588,8 +822,13 @@
                 <span class="fs-stat-label">Date</span>
                 <span class="fs-stat-val" id="fs-date">Date</span>
             </div>
-            <!-- ALL STATS BUTTON -->
-            <div class="fs-stat">
+            
+            <!-- WATCH NOW & STATS BUTTONS -->
+            <div class="fs-stat" style="flex-direction: row; gap: 16px;">
+                <button class="watch-now-btn" onclick="playCurrentGame()">
+                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    Watch Now
+                </button>
                 <button class="all-stats-btn" onclick="openStatsModal()">All Stats</button>
             </div>
         </div>
@@ -609,7 +848,67 @@
     </div>
 
     <script>
-        // Helper to get current date as YYYYMMDD
+        // CONFIGURATION
+        const CONFIG = {
+            targetDeviceIp: 'http://192.168.1.100:8080' // Change to your TV's actual IP/Port
+        };
+
+        // TOAST NOTIFICATION HELPER
+        function showToast(message) {
+            let toast = document.getElementById('app-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'app-toast';
+                toast.className = 'toast-msg';
+                document.body.appendChild(toast);
+            }
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // PLAY ON DEVICE (From Reference)
+        function playOnDevice(targetUrl) {
+            if (!targetUrl.startsWith('http') && !targetUrl.includes('viewer.html')) {
+                window.location.href = targetUrl;
+                return;
+            }
+
+            let finalUrl = targetUrl;
+            if (targetUrl.includes('viewer.html?url=')) {
+                finalUrl = decodeURIComponent(targetUrl.split('viewer.html?url=')[1]);
+            }
+
+            const apiUrl = `${CONFIG.targetDeviceIp}/play?url=${encodeURIComponent(finalUrl)}`;
+            
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showToast(`Sent to TV!`);
+                    } else {
+                        alert('Error from TV: ' + data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Failed to connect to the TV at ' + CONFIG.targetDeviceIp);
+                });
+        }
+
+        // TRIGGER PLAY FOR CURRENT GAME
+        function playCurrentGame() {
+            if (!activeFsGameId) return;
+            // Generate Watch URL (using espn gamecast as generic source)
+            const sportPath = currentLeague === 'all' ? 'nfl' : currentLeague; 
+            const targetUrl = `https://www.espn.com/${sportPath}/game/_/gameId/${activeFsGameId}`;
+            
+            playOnDevice(targetUrl);
+        }
+
+        // EXISTING LOGIC
         function getTodayFormatted() {
             const d = new Date();
             const year = d.getFullYear();
@@ -620,11 +919,12 @@
 
         const todayStr = getTodayFormatted();
 
-        // Data State with dynamic date injection
         const apis = {
             nfl: `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${todayStr}`,
             nba: `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${todayStr}`,
-            mlb: `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=${todayStr}`
+            mlb: `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=${todayStr}`,
+            nhl: `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=${todayStr}`,
+            'college-football': `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${todayStr}`
         };
 
         let currentLeague = 'all';
@@ -633,7 +933,6 @@
         let listRefreshInterval = null;
         let currentDetailedStats = null; 
 
-        // UI Tabs
         const tabBtns = document.querySelectorAll('.tab-btn');
         const views = document.querySelectorAll('.view');
 
@@ -641,8 +940,10 @@
             tabBtns.forEach(b => b.classList.remove('active'));
             views.forEach(v => v.classList.remove('active'));
             
-            document.querySelector(`[data-target="${targetId}"]`).classList.add('active');
-            document.getElementById(targetId).classList.add('active');
+            const btn = document.querySelector(`[data-target="${targetId}"]`);
+            if (btn) btn.classList.add('active');
+            const view = document.getElementById(targetId);
+            if (view) view.classList.add('active');
             
             currentLeague = league;
             if (league === 'all') {
@@ -652,31 +953,33 @@
             }
         }
 
-        // Helper renderer template for games
         function renderGamesHTML(events) {
             return events.map(game => {
                 const comp = game.competitions[0];
-                const away = comp.competitors.find(c => c.homeAway === 'away');
-                const home = comp.competitors.find(c => c.homeAway === 'home');
-                
+                const away = comp.competitors.find(c => c.homeAway === 'away') || comp.competitors[0];
+                const home = comp.competitors.find(c => c.homeAway === 'home') || comp.competitors[1];
+                const isLive = game.status.type.state === 'in';
+                const statusClass = isLive ? 'live' : game.status.type.state;
+                const broadcastName = comp.broadcasts && comp.broadcasts.length > 0 ? (comp.broadcasts[0].names ? comp.broadcasts[0].names[0] : (comp.broadcasts[0].media ? comp.broadcasts[0].media.shortName : '')) : '';
+
                 return `
                     <div class="game-card" onclick="openFullscreen('${game.leagueKey || currentLeague}', '${game.id}')">
                         <div class="card-header">
-                            <span class="status ${game.status.type.state}">${game.status.type.detail}</span>
-                            <span>${comp.broadcasts && comp.broadcasts.length > 0 ? comp.broadcasts[0].names[0] : ''}</span>
+                            <span class="status ${statusClass}">${isLive ? '<span class="live-dot"></span>' : ''}${game.status.type.detail}</span>
+                            ${broadcastName ? `<span class="broadcast-tag">${broadcastName}</span>` : ''}
                         </div>
                         <div class="card-teams">
                             <div class="card-team-row">
                                 <div class="card-team-info">
-                                    <img src="${away.team.logo}" class="card-logo" onerror="this.style.display='none'">
-                                    <span class="card-name">${away.team.shortDisplayName}</span>
+                                    <img src="${away.team.logo || ''}" class="card-logo" onerror="this.style.display='none'">
+                                    <span class="card-name">${away.team.shortDisplayName || away.team.name}</span>
                                 </div>
                                 <span class="card-score">${away.score !== undefined ? away.score : '-'}</span>
                             </div>
                             <div class="card-team-row">
                                 <div class="card-team-info">
-                                    <img src="${home.team.logo}" class="card-logo" onerror="this.style.display='none'">
-                                    <span class="card-name">${home.team.shortDisplayName}</span>
+                                    <img src="${home.team.logo || ''}" class="card-logo" onerror="this.style.display='none'">
+                                    <span class="card-name">${home.team.shortDisplayName || home.team.name}</span>
                                 </div>
                                 <span class="card-score">${home.score !== undefined ? home.score : '-'}</span>
                             </div>
@@ -686,7 +989,6 @@
             }).join('');
         }
 
-        // Fetch Single League List View
         async function fetchList(league, containerId) {
             try {
                 const res = await fetch(apis[league]);
@@ -694,51 +996,76 @@
                 const container = document.getElementById(containerId);
                 
                 if (!data.events || data.events.length === 0) {
-                    container.innerHTML = `<div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">No games found for today.</div>`;
+                    container.innerHTML = `<div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">No games scheduled for today.</div>`;
                     return;
                 }
 
                 const sortedEvents = data.events.sort((a, b) => new Date(a.date) - new Date(b.date));
+                sortedEvents.forEach(e => e.leagueKey = league);
                 container.innerHTML = renderGamesHTML(sortedEvents);
             } catch (err) {
                 console.error(err);
+                const container = document.getElementById(containerId);
+                if (container) container.innerHTML = `<div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">Could not load scores.</div>`;
             }
         }
 
-        // Fetch All Leagues Concurrently
         async function fetchAllGames(containerId) {
             try {
                 const container = document.getElementById(containerId);
-                const [nflRes, nbaRes, mlbRes] = await Promise.all([
-                    fetch(apis.nfl).then(r => r.json()).catch(() => ({ events: [] })),
-                    fetch(apis.nba).then(r => r.json()).catch(() => ({ events: [] })),
-                    fetch(apis.mlb).then(r => r.json()).catch(() => ({ events: [] }))
-                ]);
+                const results = await Promise.all(
+                    Object.keys(apis).map(key => 
+                        fetch(apis[key])
+                            .then(r => r.json())
+                            .then(d => ({ leagueKey: key, events: d.events || [] }))
+                            .catch(() => ({ leagueKey: key, events: [] }))
+                    )
+                );
 
                 let allEvents = [];
-                if (nflRes.events) nflRes.events.forEach(e => { e.leagueKey = 'nfl'; allEvents.push(e); });
-                if (nbaRes.events) nbaRes.events.forEach(e => { e.leagueKey = 'nba'; allEvents.push(e); });
-                if (mlbRes.events) mlbRes.events.forEach(e => { e.leagueKey = 'mlb'; allEvents.push(e); });
+                results.forEach(res => {
+                    res.events.forEach(e => {
+                        e.leagueKey = res.leagueKey;
+                        allEvents.push(e);
+                    });
+                });
+
+                const liveCount = allEvents.filter(e => e.status && e.status.type && e.status.type.state === 'in').length;
+                const badge = document.getElementById('live-badge-all');
+                if (badge) {
+                    if (liveCount > 0) {
+                        badge.style.display = 'flex';
+                        document.getElementById('live-count-num').innerText = liveCount;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
 
                 if (allEvents.length === 0) {
                     container.innerHTML = `<div style="color:#888; grid-column: span 3; text-align: center; padding: 40px; font-size: 1.25rem;">No games found across any league for today.</div>`;
                     return;
                 }
 
-                allEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+                // Sort: Live games first, then by date
+                allEvents.sort((a, b) => {
+                    const aLive = a.status.type.state === 'in' ? 1 : 0;
+                    const bLive = b.status.type.state === 'in' ? 1 : 0;
+                    if (aLive !== bLive) return bLive - aLive;
+                    return new Date(a.date) - new Date(b.date);
+                });
+
                 container.innerHTML = renderGamesHTML(allEvents);
             } catch (err) {
                 console.error("Failed to fetch all games:", err);
             }
         }
 
-        // Fullscreen Logic
         async function openFullscreen(league, gameId) {
             activeFsGameId = gameId;
-            // Handle fallback if leagueKey wasn't bound
-            if(league === 'all') league = 'nfl'; 
+            if (league === 'all') league = 'nfl'; 
             document.getElementById('fs-view').classList.add('active');
             await refreshFullscreenData(league);
+            clearInterval(fsRefreshInterval);
             fsRefreshInterval = setInterval(() => refreshFullscreenData(league), 15000);
         }
 
@@ -758,15 +1085,16 @@
             if (!activeFsGameId) return;
             try {
                 const targetLeague = leagueToUse || currentLeague;
-                const baseUrl = apis[targetLeague === 'all' ? 'nfl' : targetLeague].split('?')[0];
+                const baseApi = apis[targetLeague === 'all' ? 'nfl' : targetLeague] || apis.nfl;
+                const baseUrl = baseApi.split('?')[0];
                 const url = baseUrl.replace('/scoreboard', `/summary?event=${activeFsGameId}`);
                 const res = await fetch(url);
                 const data = await res.json();
                 
                 const game = data.header || data; 
                 const comp = game.competitions[0];
-                const away = comp.competitors.find(c => c.homeAway === 'away');
-                const home = comp.competitors.find(c => c.homeAway === 'home');
+                const away = comp.competitors.find(c => c.homeAway === 'away') || comp.competitors[0];
+                const home = comp.competitors.find(c => c.homeAway === 'home') || comp.competitors[1];
                 
                 if (data.boxscore && data.boxscore.teams) {
                     currentDetailedStats = {
@@ -778,24 +1106,25 @@
                     currentDetailedStats = null;
                 }
 
-                const awayColor = away.team.color ? `#${away.team.color}` : '#333333';
-                const homeColor = home.team.color ? `#${home.team.color}` : '#111111';
+                const awayColor = away.team.color ? `#${away.team.color}` : '#2b1b1b';
+                const homeColor = home.team.color ? `#${home.team.color}` : '#161622';
                 document.getElementById('fs-bg').style.background = `linear-gradient(135deg, ${awayColor} 0%, ${awayColor} 50%, ${homeColor} 50%, ${homeColor} 100%)`;
 
-                const broadcast = comp.broadcasts && comp.broadcasts.length > 0 ? comp.broadcasts[0].media.shortName || comp.broadcasts[0].names[0] : '';
+                const broadcast = comp.broadcasts && comp.broadcasts.length > 0 ? (comp.broadcasts[0].media ? comp.broadcasts[0].media.shortName : (comp.broadcasts[0].names ? comp.broadcasts[0].names[0] : '')) : '';
                 document.getElementById('fs-network').innerText = broadcast;
 
+                const statusObj = game.status || comp.status;
                 const statusEl = document.getElementById('fs-status');
-                statusEl.innerText = game.status ? game.status.type.detail : comp.status.type.detail;
-                statusEl.style.color = (game.status || comp.status).type.state === 'in' ? 'var(--danger-color)' : 'white';
+                statusEl.innerText = statusObj ? statusObj.type.detail : 'SCHEDULED';
+                statusEl.style.color = (statusObj && statusObj.type.state === 'in') ? 'var(--danger-color)' : 'white';
 
-                document.getElementById('fs-away-logo').src = away.team.logos ? away.team.logos[0].href : away.team.logo;
+                document.getElementById('fs-away-logo').src = away.team.logos ? away.team.logos[0].href : (away.team.logo || '');
                 document.getElementById('fs-away-logo').style.display = 'block';
                 document.getElementById('fs-away-name').innerText = away.team.abbreviation || away.team.shortDisplayName;
                 document.getElementById('fs-away-record').innerText = away.record ? away.record[0].summary : '';
                 document.getElementById('fs-away-score').innerText = away.score !== undefined ? away.score : '-';
 
-                document.getElementById('fs-home-logo').src = home.team.logos ? home.team.logos[0].href : home.team.logo;
+                document.getElementById('fs-home-logo').src = home.team.logos ? home.team.logos[0].href : (home.team.logo || '');
                 document.getElementById('fs-home-logo').style.display = 'block';
                 document.getElementById('fs-home-name').innerText = home.team.abbreviation || home.team.shortDisplayName;
                 document.getElementById('fs-home-record').innerText = home.record ? home.record[0].summary : '';
@@ -803,7 +1132,7 @@
 
                 const d = new Date(comp.date);
                 document.getElementById('fs-date').innerText = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-                document.getElementById('fs-venue').innerText = data.gameInfo ? data.gameInfo.venue.fullName : 'TBD';
+                document.getElementById('fs-venue').innerText = data.gameInfo && data.gameInfo.venue ? data.gameInfo.venue.fullName : 'TBD';
                 
                 const odds = data.pickcenter && data.pickcenter.length > 0 ? data.pickcenter[0].details : null;
                 if (odds) {
@@ -818,7 +1147,6 @@
             }
         }
 
-        // Stats Modal Logic
         function openStatsModal() {
             const modal = document.getElementById('stats-modal');
             const body = document.getElementById('modal-stats-body');
@@ -866,7 +1194,6 @@
             document.getElementById('stats-modal').classList.remove('active');
         }
 
-        // Init - Load All Games by default on startup
         fetchAllGames('all-list');
         listRefreshInterval = setInterval(() => {
             if (!activeFsGameId) {
@@ -876,7 +1203,7 @@
                     fetchList(currentLeague, `${currentLeague}-list`);
                 }
             }
-        }, 60000);
+        }, 45000);
     </script>
 </body>
 </html>

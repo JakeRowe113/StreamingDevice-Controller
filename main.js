@@ -9,7 +9,8 @@ function createWindow () {
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      webviewTag: true
     }
   })
   win.loadFile('index.html')
